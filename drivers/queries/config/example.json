@@ -1,0 +1,23 @@
+{
+  "run": {
+    "cluster":"test_cluster"
+  },
+  "jobs": [
+    {
+      "job_id": "job1",
+      "concurrency": 10,
+      "driver": "queries",
+      "cycle_operations": true,
+      "parameters": {
+        "index_pattern": "items_local*",
+        "query_file": "es_query_log_20170712"
+      },
+      "operations": [
+        {
+          "name": "query",
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}
