@@ -1,5 +1,5 @@
 var util = require('../../lib/util');
-var fs = require('fs');
+var readLines = require('n-readlines');
 
 module.exports.init = function (esClient, parameters, driver_data) {
   var state = {};
@@ -12,8 +12,8 @@ module.exports.init = function (esClient, parameters, driver_data) {
   }
 
   state['query_file'] = file;
-  state['query_json_list'] = fs.readFileSync(file, 'utf8').trim().split(/\r?\n/);
-  state['query_json_list_idx'] = 0;
+  state['query_file_reader'] = new readLines(file);
+  state['query_json_file_line_number'] = 0;
 
   return state;
 };
@@ -25,21 +25,25 @@ module.exports.query = function (esClient, state, driver_data, operation_paramet
     index_pattern = operation_parameters.index_pattern;
   }
 
-  var queries = state['query_json_list'];
-  var idx = state['query_json_list_idx'];
-  if (queries.length > 0) {
-    var json = queries[idx];
-    var query = JSON.parse(json);
+  var reader = state['query_file_reader'];
+  var line = reader.next();
+  if (!line) {
+    // Reached to the end. Reopen the file.
+    reader = new readLines(state['query_file']);
+    state['query_file_reader'] = reader;
+    state['query_json_file_line_number'] = 0;
+    line = reader.next();
+  }
+
+  if (line) {
+    var query = JSON.parse(line);
     esClient.search({
       index: index_pattern,
       body: query
     }).then(function (resp) {
-      result_callback({'result_code': 'OK', 'count': resp.hits.total, 'query_file': state['query_file'], 'idx': idx});
-      idx++;
-      if (idx >= queries.length) {
-        idx -= queries.length;
-      }
-      state['query_json_list_idx'] = idx;
+      var line_number = state['query_json_file_line_number'];
+      result_callback({'result_code': 'OK', 'count': resp.hits.total, 'query_file': state['query_file'], 'line': line_number});
+      state['query_json_file_line_number'] = line_number + 1;
     }, function (err) {
       result_callback({'result_code': 'ERROR', 'error': err});
     });
@@ -55,4 +59,7 @@ function set_state_value(name, state, parameters, default_value) {
     state[name] = default_value;
   }
 }
-	
+
+function read_line(fd) {
+
+}
