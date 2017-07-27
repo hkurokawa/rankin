@@ -1,3 +1,4 @@
+var cluster = require('cluster');
 var util = require('../../lib/util');
 var readLines = require('n-readlines');
 
@@ -10,6 +11,8 @@ module.exports.init = function (esClient, parameters, driver_data) {
   if (!file) {
     throw Error('query_file must be specified.');
   }
+  var agent_id = cluster.worker.id;
+  file = file + "_" + agent_id;
 
   state['query_file'] = file;
   state['query_file_reader'] = new readLines(file);
@@ -28,7 +31,7 @@ module.exports.query = function (esClient, state, driver_data, operation_paramet
   var reader = state['query_file_reader'];
   var line = reader.next();
   if (!line) {
-    // Reached to the end. Reopen the file.
+    // Reached to the end. Reopen the file and start from the head.
     reader = new readLines(state['query_file']);
     state['query_file_reader'] = reader;
     state['query_json_file_line_number'] = 0;
@@ -58,8 +61,4 @@ function set_state_value(name, state, parameters, default_value) {
   } else {
     state[name] = default_value;
   }
-}
-
-function read_line(fd) {
-
 }
