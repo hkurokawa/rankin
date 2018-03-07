@@ -10,7 +10,8 @@
       "cycle_operations": true,
       "parameters": {
         "index_pattern": "items_local*",
-        "query_file": "es_query_log_20170712"
+        "query_file": "es_query_log_20170712",
+        "query_file_offset": 2500
       },
       "operations": [
         {
